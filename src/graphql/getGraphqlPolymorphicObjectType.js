@@ -41,7 +41,13 @@ function getGraphQlUnionObjectType(g, iri, ranges) {
     name: `U_${unionName}`,
     types: types,
     description: `Union of ${gqlNames.join(' and ')}`,
-    resolveType : (value) => typeMap[value.type]
+    resolveType : (value) => {  
+      if (typeMap[value.type] === undefined){
+        throw new Error(`${value.type} was not found in typeMap. TypeMap Keys: ${Object.keys(typeMap)}`);
+      }
+      return typeMap[value.type];
+    }
+  
   });
 }
 
