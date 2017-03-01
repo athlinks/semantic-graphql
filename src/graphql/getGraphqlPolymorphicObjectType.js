@@ -4,7 +4,7 @@ const memorize = require('../graph/memorize');
 const { GraphQLUnionType } = require('graphql');
 const getGraphqlName = require('./getGraphqlName');
 const getGraphqlObjectType = require('./getGraphqlObjectType');
-
+const getIriLocalName = require('../utils/getIriLocalName');
 // Generate an IRI that represents the Union of some resources
 function getUnionIri(g, iris) {
   const gqlNames = iris.map(x => getGraphqlName(g,x)).sort().join(',');
@@ -25,6 +25,13 @@ function memorizeRangesAdapter(fn, key) {
   }
 }
 
+const flatten = arr => arr.reduce(
+  (acc, val) => acc.concat(
+    Array.isArray(val) ? flatten(val) : val
+  ),
+  []
+);
+
 // Creates a GraphQLUnionType from a collection of iris in ranges.
 // g : graph
 // iri : resource name of the range
@@ -41,11 +48,23 @@ function getGraphQlUnionObjectType(g, iri, ranges) {
     name: `U_${unionName}`,
     types: types,
     description: `Union of ${gqlNames.join(' and ')}`,
-    resolveType : (value) => {  
-      if (typeMap[value.type] === undefined){
-        throw new Error(`${value.type} was not found in typeMap. TypeMap Keys: ${Object.keys(typeMap)}`);
+    resolveType : (value) => { 
+      var typeMapName = value.typename;
+      if (typeMapName.includes(':')){
+        typeMapName = getIriLocalName(typeMapName);
       }
-      return typeMap[value.type];
+
+      if (typeMap[typeMapName] !== undefined){
+        return typeMap[typeMapName];
+      }
+      var found = Object.values(typeMap).find(x => {
+        return x._interfaces.find(y => y.name === typeMapName);
+      });    
+      if (found !== undefined){
+        return found;
+      }
+
+      throw new Error(`${typeMapName} was not found in typeMap. TypeMap Keys: ${Object.keys(typeMap)} value: ${JSON.stringify(value)}`);
     }
   
   });
