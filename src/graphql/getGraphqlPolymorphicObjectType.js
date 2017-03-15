@@ -49,22 +49,12 @@ function getGraphQlUnionObjectType(g, iri, ranges) {
     types: types,
     description: `Union of ${gqlNames.join(' and ')}`,
     resolveType : (value) => { 
-      var typeMapName = value.typename;
-      if (typeMapName.includes(':')){
-        typeMapName = getIriLocalName(typeMapName);
-      }
-
-      if (typeMap[typeMapName] !== undefined){
-        return typeMap[typeMapName];
-      }
-      var found = Object.values(typeMap).find(x => {
-        return x._interfaces.find(y => y.name === typeMapName);
-      });    
-      if (found !== undefined){
-        return found;
-      }
-
-      throw new Error(`${typeMapName} was not found in typeMap. TypeMap Keys: ${Object.keys(typeMap)} value: ${JSON.stringify(value)}`);
+        var rettype = value["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"];
+        if (!rettype){
+          throw new Error(`${value.typename} was not found. value: ${JSON.stringify(value)}`);
+        } else {
+          return getGraphqlObjectType(g,rettype);
+        }
     }
   
   });
